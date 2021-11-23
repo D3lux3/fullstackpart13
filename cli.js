@@ -1,5 +1,9 @@
 require('dotenv').config();
 const { Sequelize, Model, DataTypes } = require('sequelize');
+const express = require('express');
+const app = express();
+app.use(express.json());
+
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialectOptions: {
@@ -38,15 +42,33 @@ Blog.init({
     timestamps: false,
     modelName: 'blog'
 })
+Blog.sync();
 
-const main = async () => {
+const PORT = 3001 || process.env.PORT;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+
+
+app.get('/api/blogs', async (req, res) => {
     const blogs = await Blog.findAll();
+    res.json(blogs);
+})
 
-    blogs.map(b => (b.get()))
-    .forEach((b) => {
-        console.log(`${b.author}: '${b.title}', ${b.likes} likes`)
-    })
+app.post('/api/blogs', async (req, res) => {
+    const blog = await Blog.create(req.body);
+    res.json(req.body);
+})
 
-}
+app.delete('/api/blogs/:id', async (req, res) => {
+    const blog = await Blog.findByPk(req.params.id);
 
-main();
+    if (blog) {
+        await blog.destroy();
+        res.json(blog);
+    } else {
+        res.status(404).end();
+    }
+
+})
